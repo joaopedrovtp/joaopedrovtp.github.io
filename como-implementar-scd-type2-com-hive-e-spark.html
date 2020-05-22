@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link href="http://gmpg.org/xfn/11" rel="profile">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+		<!-- Enable responsiveness on mobile devices-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+		<title>Slowly Change Dimension em um DW com Hive e Spark</title>
+
+		<!-- CSS -->
+
+		<link rel="stylesheet" href="theme/css/poole.css" />
+		<link rel="stylesheet" href="theme/css/hyde.css" />
+		<link rel="stylesheet" href="theme/css/syntax.css" />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+
+	</head>
+
+
+<body class="theme-base-0d">
+
+	<div class="sidebar">
+		<div class="container sidebar-sticky">
+			<div class="sidebar-about">
+				<h2>
+					<a href="index.html">
+						<img class="profile-picture" src="images/perfil.png">
+						João Pedro Pereira
+					</a>
+				</h2>
+				<p class="lead"></p>
+				<p class="lead">Hello World! :) </p>
+				<p></p>
+			</div>
+			<nav class="sidebar-nav">
+						<a class="sidebar-nav-item" href="mailto:joaopedrovtp@hotmail.com">
+							<i class="fa fa-envelope"></i>
+						</a>
+						<a class="sidebar-nav-item" href="https://linkedin.com/in/joao-pedro-vt-pereira/">
+							<i class="fa fa-linkedin"></i>
+						</a>
+						<a class="sidebar-nav-item" href="https://github.com/joaopedrovtp">
+							<i class="fa fa-github"></i>
+						</a>
+			</nav>
+		</div>
+	</div>		
+
+<div class="content container">
+	<div class="post">
+		<h1 class="post-title">Slowly Change Dimension em um DW com Hive e Spark</h1>
+		<span class="post-date">Sun 17 May 2020</span>
+		
+		<p>Um dos mais amplos usos do Hadoop atualmente é construir uma
+		plataforma de Data Warehousing sobre um Data Lake, através do Apache Hive.</p>
+		<p>Slowly Changing Dimension(SCD) é um termo utilizado em teorias de Data Management e Data Warehousing para 
+		grupos de dados lógicos como informações de produtos, clientes, etc. que mudam lentamente ao longo do tempo. 
+		Nesse exemplo vou implementar o SCD tipo 2 em uma tabela no DW do Hive utilizando o Apache Spark.
+		<p><img alt="" src="images/hadoop-hive-pyspark.png"></p>
+		</p>
+
+		<h3>Mas o que é SCD tipo 2?</h3>
+		<p>O SCD Tipo 2 é a técnica mais utilizada para atualizações de dimensões. Nesse tipo de SCD é adicionado um 
+			novo registro com as mudanças, preservando sempre os dados anteriores. Dessa forma, os registros da tabela 
+			fato vão apontar para a versão correspondente nas dimensões de acordo com a data de referência.</p>
+		<p><img alt="" src="/images/tree.png"></p>
+
+		<p>Vamos ao exemplo!</p>
+		<p>Temos uma tabela atual:</p>
+		<script src="https://gist.github.com/joaopedrovtp/07efc89a4aedc13adbbfb65ea5441bb3.js"></script><br>
+		<p>Novos dados para serem atualizados:</p>
+		<script src="https://gist.github.com/joaopedrovtp/35378096cb4c59431016058ea8ba3cd8.js"></script><br>
+		<p>Tabela resultante:</p>
+		<script src="https://gist.github.com/joaopedrovtp/262ca674c476c19d702a3c74ffe14d13.js"></script><br>
+
+
+		<h3>O que mudou?</h3>
+		<p>- A cliente Joana não teve alterações, portanto manteve o registro.</p>
+		<p>- João e Gabriela tiveram seus dados alterados, logo novos registros são lançados.</p>
+		<p>- Ricardo não está na nova carga. É um caso de exclusão.</p>
+			
+		<p>Para começar, vou fazer uma ingestão de dados do MySQL para o Hive, importando a tabela ‘clientes’ 
+			utilizando o Apache Sqoop. Obs.: É necessário que seja criada a database ‘companydb’ no Hive.</p>
+
+		<div class="highlight"><pre><span></span>sqoop import --connect jdbc:mysql://localhost:3306/companydb?serverTimezone=UTC --username root --password xxx --m 1 --table clientes --hive-import --hive-database  companydb
+			</pre></div>	
+
+		<p>Pode também ser utilizado a comando import-all-tables para importar todas as tabelas do db do MySQL.</p>
+
+		<div class="highlight"><pre><span></span>sqoop import-all-tables --connect jdbc:mysql://localhost:3306/companydb?serverTimezone=UTC --username root --password xxx –m --hive-import --hive-database  companydb
+		</pre></div>
+
+		<p>Aqui é informado endereço do meu banco de dados no MySQL, a tabela a ser importada e o direcionamento 
+			para o banco de dados ‘companydb’ no Hive. Para conseguir realizar esse processo, tive que configurar dois
+			 elementos antes:
+		</p>
+		<p>- Configurar o MySQL como metadados do Hive. Por padrão o Hive usa o Apache Derby como gerenciador do metastore, 
+			que é um pouco limitado comparado ao MySQL. Segue link de referência da configuração <a href="https://dzone.com/articles/how-configure-mysql-metastore">aqui</a>.
+		</p>  
+		<p>- Baixar o arquivo hive-common-0.10.0.jar e colocar na pasta de libs do sqoop.</p>
+
+		<p><img alt="" src="images/hive-table.png"></p><br>
+
+		<p>Após a importação let's code com Pyspark: </p>
+
+		<script src="https://gist.github.com/joaopedrovtp/783943f8305063ed18b5bd55c99159fc.js"></script><br>
+
+		<p>E o resultado final:</p>
+		<p><img alt="" src="images/scd_resultado.png"></p>
+		</div>
+	</div>
+
+</body>
+</html>
