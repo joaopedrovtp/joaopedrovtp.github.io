@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link href="http://gmpg.org/xfn/11" rel="profile">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+		<!-- Enable responsiveness on mobile devices-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+		<title>Busca de coordenadas geográficas com Flask e Docker</title>
+
+		<!-- CSS -->
+
+		<link rel="stylesheet" href="theme/css/poole.css" />
+		<link rel="stylesheet" href="theme/css/hyde.css" />
+		<link rel="stylesheet" href="theme/css/syntax.css" />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+
+	</head>
+
+
+<body class="theme-base-0d">
+
+	<div class="sidebar">
+		<div class="container sidebar-sticky">
+			<div class="sidebar-about">
+				<h2>
+					<a href="index.html">
+						
+						<img class="profile-picture" src="images/perfil.png">
+						João Pedro Pereira
+					</a>
+				</h2>
+				<p class="lead"></p>
+				<p class="lead">An Administrator and Tech lover &#9829;</p>
+				<p></p>
+			</div>
+			<nav class="sidebar-nav">
+						<a class="sidebar-nav-item" href="mailto:joaopedrovtp@hotmail.com">
+							<i class="fa fa-envelope"></i>
+						</a>
+						<a class="sidebar-nav-item" href="https://linkedin.com/in/joaopedrovtp/">
+							<i class="fa fa-linkedin"></i>
+						</a>
+						<a class="sidebar-nav-item" href="https://github.com/joaopedrovtp">
+							<i class="fa fa-github"></i>
+						</a>
+			</nav>
+		</div>
+	</div>		
+
+<div class="content container">
+	<div class="post">
+		<h1 class="post-title">Busca de coordenadas geográficas com Flask e Docker</h1>
+		<span class="post-date">Mon 07 Sep 2020</span>
+
+		<p>Esse projeto tem o objetivo de oferecer um serviço de busca de coordenadas geográficas a partir de endereço(s) informado(s) em uma planilha Excel. A arquitetura da solução:
+		</p>
+
+		<p><img alt="" src="images/project_diagram.png"></p>
+		
+		<p>Tecnologias utilizadas:</p>
+
+		<p> •	<b>Flask:</b> Micro-framework escrito em python para desenvolvimento web;<br>
+			•	<b>Mapbox Geocoding API:</b> API para coleta das coordenadas;<br>
+			•	<b>Postgresql:</b> Banco de dados para armazenamento;<br>
+			•	<b>Docker:</b> Container para rodar e isolar a aplicação;
+		</p>
+		
+		<p>Inicialmente pensei em desenvolver um projeto para colocar em prática ferramentas que estava aprendendo: Flask e Docker. Partindo para a solução, resolvi criar um serviço, oferecendo de forma fácil e rápida, a possibilidade de buscar coordenadas geográficas a partir de endereços com uma API que tinha descoberto na época, o <a href="https://docs.mapbox.com/api/search">Mapbox Geocoding API</a>. Para manter a parte fácil da coisa, utilizei um template para o desenvolvimento web em Flask, para que fosse intuitivo para um end user utilizar o serviço com uma planilha Excel.
+		E para concluir, coloquei um banco de dados para armazenamento das consultas e fiz rodar tudo em containers do Docker.
+		</p>
+
+		<p>Essa API do Mapbox, de várias outras que eles possuem, traz tanto as coordenadas geográficas pelo endereço quanto o oposto, e podem ser feitas até 100.000 requests gratuitas. Veja <a href="https://docs.mapbox.com/api/search/#geocoding">aqui</a> a documentação para mais informações.
+		</p>
+
+		<p>Chega de bla bla blá and let’s to the code:</p>
+
+		<p><b>Passo 1: Montando o back-end</b></p>
+
+		<p>Primeiro desenvolvi uma função em Python onde são feitas a manipulação da planilha e a consulta ao Mapbox Geocoding API, o core da aplicação. 
+		</p>
+
+		<script src="https://gist.github.com/joaopedrovtp/d0c69b6fd2f3aaab7534bce318468c0e.js"></script>
+
+		<p>Vamos entender um pouco melhor a resposta da API. Na linha 39, quando passo o endereço completo para o request, a ´response´ está em um formato GeoJSON baseado em JavaScript Object Notation (JSON). O retorno do primeiro exemplo é o seguinte:
+		</p>
+
+		<p><img alt="" src="images/response_api.png"></p>
+
+		<p>Os resultados estão dentro de <i>features</i>, que por sua vez estão ordenadas as 3 localizações mais similares. Dessa forma, coleto os seguintes objetos: <br>
+			•  <b><i>place_name:</i></b> Endereço completo do resultado <br>
+			•  <b><i>center:</i></b> Coordenadas geográficas [o que queremos! :) ]
+		</p>
+
+		<p>Para o banco de dados, criei que uma função que utiliza a famosa biblioteca <b>SQLAlchemy</b> para armazenar as 
+		consultas com o postgresql. Vou mostrar mais para frente como usá-lo com o Docker.
+		</p>
+
+		<script src="https://gist.github.com/joaopedrovtp/c0c5cbe17b48864e54179bfe7012642d.js"></script>
+
+
+		<p>Se vocês perceberem nesses dois módulos, temos variáveis de configuração que são lidas de um arquivo chamado 
+		‘settings.toml’ com o <a href="https://github.com/rochacbruno/dynaconf">Dynaconf</a>. É bem útil para centralizar configs:
+		</p>		
+		
+
+		<div class="highlight"><pre>[default]<br>UPLOAD_FOLDER = 'uploads/'<br>DATABASE_URL = 'postgres://postgres:password123@db/coordenadas_api' <br>MAPBOX_TOKEN = 'pk.eyJ1Ijoiam9hb3BlZHJvdnRwIiwiYSI6ImNrZGJ4cDR4cTBmeDIycnA5OHZtMXRhdmsifQ.MNIytCWzgUThbklaT79axA'</pre>
+		</div><br>
+
+		<p><b>Passo 2: Desenvolvimento web - Flask</b></p>
+
+		<p>Por ser um microframework, o Flask não possui uma arquitetura definida. Sendo assim, para criar uma app com o Flask, podemos utilizar um único arquivo (para aplicações maiores é melhor trabalhar com <a href="https://flask.palletsprojects.com/en/1.1.x/blueprints/">Blueprints</a>).
+		</p>
+
+		<p>Pelo arquivo criado <i>app.py</i>, basicamente estou trabalhando com três rotas/páginas:<br>
+			•  <b>Página principal:</b> Recebe o arquivo excel<br>
+			•  <b>Página de Download:</b> Link disponível para baixar arquivo<br>
+			•  Rota para salvar o arquivo de download
+		</p>
+
+		<script src="https://gist.github.com/joaopedrovtp/98d4cdcd51ec178ff1874d4af5a55b54.js"></script>
+
+		<p>No final, inicializamos o flask pelo app.run() com o debug ligado e com o host ‘0.0.0.0’ para ser acessado pelo localhost.
+		</p><br>
+
+		<p><b>Passo 3: Docker image e Docker Compose</b></p>
+
+		<p>Com a Dockerfile, criei a imagem baseada em outra do Python 3.8:</p>
+
+		<script src="https://gist.github.com/joaopedrovtp/e6dda609ed9ca8d148a1cdcfed931880.js"></script>
+
+		<p>Basicamente isso faz o seguinte:</p>
+
+		<p> <b>- FROM python:3.8</b> => Puxando a imagem oficial da versão Python 3.8<br>
+			<b>- ADD . /coordenadas_API</b> => Copiando todo o diretório atual para o caminho /coordenadas_API no meu container<br>
+			<b>- WORKDIR /coordenadas_API</b> => altera para esse caminho do diretório no container quando a imagem for construída.<br>
+			<b>- RUN pip install -r requirements.txt</b> => executa o comando para baixar as dependências do projeto <br>
+			<b>- CMD ["python","app.py"]</b> => Executa continuamente o app.py
+		</p>
+
+		<p>Depois utilizei o Docker compose, que serve para orquestrar os containers e automatizar de certa forma a 
+			construção das imagens. Para mais informações veja a documentação do compose <a href="https://docs.docker.com/compose/compose-file/">aqui</a>. Abaixo o arquivo <i>docker-compose.yml</i>:
+		</p>
+
+		<script src="https://gist.github.com/joaopedrovtp/d9844f65ac949b1410231f81a666e16a.js"></script>
+		
+		<p>	Nesse arquivo yml temos configurações dos nossos serviços, que chamei de web e db (banco de dados). 
+		Cada container rodará sua própria imagem:<br><br>
+			<b>web</b> => imagem do Dockerfile presente na raiz do diretório(comando build .)<br>
+			<b>db</b> => imagem do postgresql (postgres:12-alpine). Possui configs de variáveis de ambiente e diretórios para os <a href="https://docs.docker.com/storage/volumes/"><i>volumes</i></a>.
+		</p>
+
+		<p>Para cada um temos configurações de portas, que é comunicação entre o container e o host (máquina).
+		</p>
+		
+		<p>E finalmente, vamos rodar:</p>
+
+		<div class="highlight"><pre>docker-compose up -d</pre>
+		</div>
+
+		<p>Se listar os containers ativos:</p>
+		<p><img alt="" src="images/container_up.png"></p>
+
+		<p>Percebam que o container Mapbox-API-Flask está ativo e ouvindo na porta 5000 da minha máquina.</p>
+
+		<p>Então, caso esteja tudo ok, basta acessar o localhost:5000</p>
+		<p><img alt="" src="images/print_web.png"></p>
+
+		<p>Depois de fazer o upload do arquivo preenchido, enviar e fazer o download, vamos olhar o resultado:</p>
+		<p><img alt="" src="images/resul_excel.png"></p><br>
+
+		<p>E a tabela armazenada no banco de dados? Vamos conferir lá no container pelo bash:</p>
+
+		<div class="highlight"><pre>docker exec -it coordenadas_api_web_db_1 bash </pre>
+		</div>
+
+		<p>Agora podemos inicializar o postgresql dentro do container:</p>
+		<p><img alt="" src="images/psql-bash.png"></p>
+
+		<p>Após selecionar o banco de dados ‘coordenadas_api’, basta realizar a query para consulta:</p>
+		<p><img alt="" src="images/dados_consultas.png"></p>
+
+		<p>E voilà, tudo certo. Os dados estão lá!</p>
+
+		<p>Caso queiram mais detalhes, os scripts e os arquivos estão no meu <a href="https://github.com/joaopedrovtp/coordenadas_api_web">repositório</a>.</p>
+
+		<p>Meus agradecimentos para o Bruno Rocha do <a href="https://www.youtube.com/user/brunovegan">Codeshow</a> e <a href="https://www.youtube.com/user/mendesesduardo">Eduardo Mendes</a> que me inspiraram e ajudaram nesse projeto com o conteúdo que eles disponibilizam sobre Python, Flask, Docker e outras coisas mais.</p>
+
+		</div>
+	</div>
+
+</body>
+</html>
