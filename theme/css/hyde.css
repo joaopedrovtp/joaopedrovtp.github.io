@@ -107,14 +107,14 @@ html {
 }
 
 /* Sidebar nav */
-.sidebar-nav {
+/* .sidebar-nav {
   margin-bottom: 1rem;
-  margin-right: .7rem;
-}
+  margin-right: 1.2em;
+} */
 
 
 .sidebar-nav-item {
-  display: block;
+  display: inline-table;
   padding: .25rem 0.5rem;
   background: #7dafc4;
   margin: .0 1rem;
@@ -122,7 +122,7 @@ html {
   text-transform: uppercase;
   font-size: .8rem;
   font-weight: bold;
-  float: right;
+  /* float: right; */
   width: 17%;
 }
 a.sidebar-nav-item:hover,
