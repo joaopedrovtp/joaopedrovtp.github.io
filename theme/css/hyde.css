@@ -80,13 +80,13 @@ html {
 .sidebar-about h1 {
   color: #fff;
   margin-top: 0;
-  font-family: "Abril Fatface", serif;
+  font-family: "Comfortaa", cursive;
   font-size: 3rem;
 }
 
 .sidebar-about a {
   color: #fff;
-  font-family: 'Segoe UI';
+  font-family: "Comfortaa", cursive, 'Segoe UI';
   text-decoration: none;
 }
 
